@@ -5,9 +5,17 @@ const { randomKey, message } = require("../utils");
 const controller = {
   async login(req, res) {
     try {
-      const { _id, name, email, power, type, socialAccount, provider } =
+      const { _id, name, email, power, avatar, type, socialAccount, provider } =
         req.user;
-      const payload = { _id, name, email, type, socialAccount, provider };
+      const payload = {
+        _id,
+        name,
+        email,
+        avatar,
+        type,
+        socialAccount,
+        provider,
+      };
 
       if (power === 420 && type === "admin") {
         payload.isAdmin = true;
