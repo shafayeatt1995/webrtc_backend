@@ -1,6 +1,7 @@
 const http = require("http");
 const { off } = require("process");
 const { Server } = require("socket.io");
+const { SocketUser } = require("./models");
 
 const createSocketServer = (app) => {
   const server = http.createServer(app);
@@ -15,28 +16,31 @@ const createSocketServer = (app) => {
 
   const activeUser = [];
   io.on("connection", (socket) => {
-    socket.on("join-user", ({ email, roomID }) => {
-      const i = activeUser.findIndex(({ id }) => id === socket.id);
-      if (i === -1) activeUser.push({ email, id: socket.id, roomID });
-      io.emit("active-users", { activeUser });
-    });
-
     socket.on("local-offer", ({ sender, receiver, offer }) => {
-      io.to(receiver.id).emit("remote-offer", { offer, sender, receiver });
+      io.to(receiver.socketID).emit("remote-offer", {
+        offer,
+        sender,
+        receiver,
+      });
     });
 
     socket.on("local-answer", ({ answer, sender, receiver }) => {
-      io.to(sender.id).emit("remote-answer", { answer, sender, receiver });
+      io.to(sender.socketID).emit("remote-answer", {
+        answer,
+        sender,
+        receiver,
+      });
     });
 
     socket.on("local-icecandidate", (candidate) => {
       socket.broadcast.emit("remote-icecandidate", candidate);
     });
 
-    socket.on("disconnect", (reason) => {
+    socket.on("disconnect", async (reason) => {
       console.log(reason);
-      const i = activeUser.findIndex(({ id }) => id === socket.id);
-      if (i !== -1) activeUser.splice(i, 1);
+      try {
+        await SocketUser.deleteOne({ socketID: socket.id });
+      } catch (error) {}
       io.emit("active-users", { activeUser });
     });
   });

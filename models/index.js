@@ -1,4 +1,5 @@
 module.exports = {
   User: require("./User"),
-  // Room: require("./Room"),
+  Room: require("./Room"),
+  SocketUser: require("./SocketUser"),
 };
