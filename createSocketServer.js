@@ -1,7 +1,6 @@
 const http = require("http");
 const { off } = require("process");
 const { Server } = require("socket.io");
-const { SocketUser } = require("./models");
 
 const createSocketServer = (app) => {
   const server = http.createServer(app);
@@ -14,8 +13,11 @@ const createSocketServer = (app) => {
     },
   });
 
-  const activeUser = [];
   io.on("connection", (socket) => {
+    socket.on("join-room", ({ roomID }) => {
+      socket.join(roomID);
+    });
+
     socket.on("local-offer", ({ sender, receiver, offer }) => {
       io.to(receiver.socketID).emit("remote-offer", {
         offer,
@@ -32,16 +34,12 @@ const createSocketServer = (app) => {
       });
     });
 
-    socket.on("local-icecandidate", (candidate) => {
-      socket.broadcast.emit("remote-icecandidate", candidate);
+    socket.on("local-icecandidate", async ({ candidate, roomID }) => {
+      socket.broadcast.to(roomID).emit("remote-icecandidate", candidate);
     });
 
     socket.on("disconnect", async (reason) => {
       console.log(reason);
-      try {
-        await SocketUser.deleteOne({ socketID: socket.id });
-      } catch (error) {}
-      io.emit("active-users", { activeUser });
     });
   });
 
